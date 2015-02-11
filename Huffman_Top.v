@@ -29,17 +29,18 @@ valid_bits - how many bits of data_out should be used, will be 0 if no encoding 
 module Huffman_Top(
   input clock, literal, distance, length,
   input [7:0] literal_data,
-  input [13:0] distance_data,
+  input [14:0] distance_data,
   input [8:0] length_data,
   output reg [17:0] data_out,
-  output reg [5:0] valid_bits
+  output reg [4:0] valid_bits
 );
 
-  reg [15:0] data_out_next;
-  reg [4:0] valid_bits_next;
-
+  reg enable_literal, enable_length, enable_distance;
+  wire [17:0] encoded_literal, encoded_length, encoded_distance;
+  wire [4:0] valid_bits_literal, valid_bits_length, valid_bits_distance;
+  
   //Update output registers every clock cycle
-  always@(negedge clock) 
+  always@(posedge clock) 
   begin
     if(enable_literal) begin
       data_out <= encoded_literal;
@@ -55,18 +56,15 @@ module Huffman_Top(
     end
     else begin
       data_out = 18'b0;
-      valid_bits = 6'b0;
+      valid_bits = 5'b0;
     end
   end
   
-  wire [5:0] valid_bits_literal, valid_bits_length, valid_bits_distance;
-  wire [17:0] encoded_literal, encoded_length, encoded_distance;
+  Literal_Encoder lit(literal_data, enable_literal, encoded_literal, valid_bits_literal);
   
-  Literal_Encoder (literal_data, enable_literal, encoded_literal, valid_bits_literal);
+  Distance_Encoder dist(distance_data, enable_distance, encoded_distance, valid_bits_distance);
   
-  Distance_Encoder (distance_data, enable_distance, encoded_distance, valid_bits);
-  
-  Length_Encoder (length_data, enable, encoded_length, valid_bits);
+  Length_Encoder len(length_data, enable_length, encoded_length, valid_bits_length);
   
   always@* begin
     
